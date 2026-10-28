@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>v19.8.1 · 🦋 iPhone 17 Pro Max (iOS 19) — Độc Dược Ngọt Ngào 🍷</title>
+  <title>RP Phone · Chưa chọn điện thoại / hồ sơ</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,800;1,400&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,800;1,400&display=swap" rel="stylesheet"></noscript>
@@ -1112,7 +1112,11 @@ html:is([data-world-mode="historical"],[data-world-mode="survival"],[data-world-
 @media(max-width:480px) {
  html:is([data-world-mode="historical"],[data-world-mode="survival"],[data-world-mode="custom"]) .apps-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
-</style><style>.rp-access-steps{margin-top:20px;padding:16px;background:var(--ui-card-bg);border:1px solid var(--ui-card-border);border-radius:12px;line-height:1.7}.rp-access-steps ol{padding-left:24px;margin:12px 0}.rp-access-steps li{margin-bottom:12px}.rp-access-steps .rp-actions{flex-direction:column;align-items:stretch}.rp-access-steps p{margin:10px 0}</style></head>
+</style><style>.rp-access-steps{margin-top:20px;padding:16px;background:var(--ui-card-bg);border:1px solid var(--ui-card-border);border-radius:12px;line-height:1.7}.rp-access-steps ol{padding-left:24px;margin:12px 0}.rp-access-steps li{margin-bottom:12px}.rp-access-steps .rp-actions{flex-direction:column;align-items:stretch}.rp-access-steps p{margin:10px 0}</style><style id="rp-neutral-device">
+html:not([data-device]) :is(.dev-ios,.dev-sam),html[data-device="unselected"] :is(.dev-ios,.dev-sam),html[data-device="other"] :is(.dev-ios,.dev-sam){display:none!important}
+html[data-device="unselected"] .iphone-frame,html[data-device="other"] .iphone-frame{border-radius:18px}
+html[data-device="unselected"] .screen,html[data-device="other"] .screen{border-radius:10px}
+</style></head>
 <body>
   <div class="ambient-glow"></div>
 
@@ -1352,9 +1356,9 @@ html:is([data-world-mode="historical"],[data-world-mode="survival"],[data-world-
 
   <header class="page-head">
     <div class="brand-badge"><span>🦋 ĐỘC DƯỢC NGỌT NGÀO 🍷</span></div>
-    <h1>IPHONE 17 PRO MAX</h1>
+    <h1>Chưa chọn điện thoại / hồ sơ</h1>
     <div class="meta-tag">
-      <span>Hệ điều hành: <strong class="dynamic-os">iOS 19 (Flagship)</strong></span>
+      <span>Hệ điều hành: <strong class="dynamic-os">Chưa có thông tin</strong></span>
       <span>•</span>
       <span>Chủ nhân thiết bị: <strong class="dynamic-char-name">[Tên nhân vật]</strong></span>
     </div>
@@ -2361,20 +2365,23 @@ html:is([data-world-mode="historical"],[data-world-mode="survival"],[data-world-
 
     // ===== CHỌN MÁY: iPhone hay Samsung, đổi ngay không cần tải file khác =====
     var DDNN_DEVICES = {
-      iphone:  { label: 'iPhone 17 Pro Max', os: 'iOS 19 (Flagship)',  full: 'Apple iPhone 17 Pro Max' },
-      samsung: { label: 'Samsung Galaxy S26 Ultra', os: 'One UI 8 (Flagship)', full: 'Samsung Galaxy S26 Ultra' }
+      other: { label:'Thiết bị khác theo truyện', os:'Chưa có thông tin', full:'Thiết bị khác theo truyện' },
+      iphone:  { label: 'iPhone', os: 'iOS · chưa rõ phiên bản', full: 'iPhone · chưa rõ mẫu máy' },
+      samsung: { label: 'Samsung Galaxy', os: 'Android · chưa rõ phiên bản', full: 'Samsung Galaxy · chưa rõ mẫu máy' }
     };
     function ddnnDeviceKey() {
       var k = currentDeviceData && currentDeviceData.device;
-      return DDNN_DEVICES[k] ? k : 'iphone';
+      return DDNN_DEVICES[k] ? k : '';
     }
     function ddnnApplyDevice() {
-      var k = ddnnDeviceKey(), d = DDNN_DEVICES[k];
-      document.documentElement.setAttribute('data-device', k);
+      var k = ddnnDeviceKey(), d = DDNN_DEVICES[k] || {label:'Chưa chọn điện thoại / hồ sơ', os:'Chưa có thông tin', full:'Chưa có thông tin'};
+      document.documentElement.setAttribute('data-device', k || 'unselected');
+      var hw = currentDeviceData.hardware || {};
+      var model = hw.model || d.label, os = hw.os || d.os;
       var h = document.querySelector('.page-head h1');
-      if (h) h.innerText = d.label.toUpperCase();
-      document.querySelectorAll('.dynamic-os').forEach(function (el) { el.innerText = d.os; });
-      document.querySelectorAll('.dynamic-device-full').forEach(function (el) { el.innerText = d.full; });
+      if (h) h.innerText = model;
+      document.querySelectorAll('.dynamic-os').forEach(function (el) { el.innerText = os; });
+      document.querySelectorAll('.dynamic-device-full').forEach(function (el) { el.innerText = hw.model || d.full; });
       document.title = '🦋 ' + (currentDeviceData.charName || d.label) + ' — Độc Dược Ngọt Ngào 🍷';
     }
     function ddnnSetDevice(k) {
@@ -3118,7 +3125,7 @@ html:is([data-world-mode="historical"],[data-world-mode="survival"],[data-world-
         grudges: { entries: [] },
         network: { items: [] },
         skin: 'house',
-        device: 'iphone',
+        device: '',
         installed: {},
         locks: {},
         hardware: {},
@@ -3476,7 +3483,9 @@ html:is([data-world-mode="historical"],[data-world-mode="survival"],[data-world-
 
             case 'MAY': {
               var mw = ddnnStrip(g(0)).toLowerCase().replace(/[^a-z0-9]/g, '');
-              d.device = (mw.indexOf('sam') >= 0 || mw.indexOf('android') >= 0 || mw.indexOf('galaxy') >= 0) ? 'samsung' : 'iphone';
+              if (!mw) { skip(i + 1, line, 'MAY cần tên hoặc loại máy; không tự chọn iPhone.'); break; }
+              d.device = /sam|android|galaxy/.test(mw) ? 'samsung' : /iphone|apple|ios/.test(mw) ? 'iphone' : 'other';
+              if (d.device === 'other') { d.hardware=d.hardware||{}; if (!d.hardware.model) d.hardware.model=g(0); }
               bump('Kiểu máy'); break;
             }
 
@@ -3597,7 +3606,7 @@ html:is([data-world-mode="historical"],[data-world-mode="survival"],[data-world-
       if (!d.charName) d.charName = prev.charName || '[Tên nhân vật]';
       if (!d.charPin) d.charPin = prev.charPin || '';
       if (!d.skin) d.skin = prev.skin || 'house';
-      if (!d.device) d.device = prev.device || 'iphone';
+      if (!d.device && !replaceOld) d.device = prev.device || '';
 
       // đếm lại chấm đỏ theo dữ liệu thật, không lấy số mẫu
       var unread = 0, missed = 0, unreadNotif = 0;
@@ -3813,6 +3822,7 @@ html:is([data-world-mode="historical"],[data-world-mode="survival"],[data-world-
     function ddnnFillHardware(d) {
       if (!d.hardware) d.hardware = {};
       var H = d.hardware;
+      if (!['iphone','samsung'].includes(d.device)) return H;
       var sam = d.device === 'samsung';
       var rnd = ddnnRng(ddnnSeed((d.charName || 'may') + '|' + d.device));
 
@@ -5293,7 +5303,7 @@ html:is([data-world-mode="historical"],[data-world-mode="survival"],[data-world-
       else{recordSnoop('Đã nhập sai mã tệp riêng',true);alert('Mã chưa đúng.');currentPinBuffer='';updatePinDisplay();}
     }
 
-// v19.8.1 — compact transport retained; app actions share one persistent ledger.
+// v19.8.2 — compact transport retained; app actions share one persistent ledger.
 var rpDetail = null, rpFormDone = null, rpAudio = null, rpAudioKey = '', rpAudioError = '';
 var rpImportMode = false;
 

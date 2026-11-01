@@ -5303,7 +5303,7 @@ html[data-device="unselected"] .screen,html[data-device="other"] .screen{border-
       else{recordSnoop('Đã nhập sai mã tệp riêng',true);alert('Mã chưa đúng.');currentPinBuffer='';updatePinDisplay();}
     }
 
-// v19.8.2 — compact transport retained; app actions share one persistent ledger.
+// v19.8.3 — compact transport retained; app actions share one persistent ledger.
 var rpDetail = null, rpFormDone = null, rpAudio = null, rpAudioKey = '', rpAudioError = '';
 var rpImportMode = false;
 
@@ -5559,7 +5559,7 @@ function rpDeletePhone(id){
 
 function rpOpenLibrary(){
  var d=document.getElementById('rpPhonePicker');if(d)d.remove();d=document.createElement('dialog');d.id='rpPhonePicker';d.className='rp-dialog';
- d.innerHTML='<h2>Danh sách điện thoại</h2><p>Mỗi ván và mỗi máy giữ dữ liệu, PIN, dấu vết, lược sử riêng.</p><div class="rp-actions">'+rpButton('＋ Ván chơi mới','rpNewGame()')+rpButton('＋ Máy trong ván này','rpNewPhone()')+rpButton('Đổi tên ván','rpRenameGame()')+'</div>'+rpLibrary.games.map(g=>'<section><h3>'+rpE(g.name)+'</h3>'+rpLibrary.phones.filter(p=>p.gameId===g.id).map(p=>'<div class="rp-library-row"><span>'+rpE(p.owner||'Máy chưa nạp')+(p.id===rpLibrary.activeId?' · đang chọn':'')+'</span>'+'<div class="rp-phone-row-actions">'+rpButton(p.id===rpLibrary.activeId?'Đang mở':'Mở máy','rpSelectPhone('+JSON.stringify(p.id)+')',p.id===rpLibrary.activeId)+'<button type="button" class="rp-btn rp-btn-danger" onclick="'+rpE('rpDeletePhone('+JSON.stringify(p.id)+')')+'">Xóa máy</button></div></div>').join('')+'</section>').join('')+'<p class="rp-muted">Chơi cùng một nhân vật ở hai chat khác nhau? Tạo hai ván riêng. Trước khi sang cuộc chat khác, nhớ xuất thao tác về đúng chat.</p><div class="rp-actions">'+rpButton('Sao lưu toàn bộ kho','rpBackupLibrary()')+rpButton('Đóng',"document.getElementById('rpPhonePicker').close()")+'</div>';
+ d.innerHTML='<h2>Danh sách điện thoại</h2><p>Mỗi ván và mỗi máy giữ dữ liệu, PIN, dấu vết, lược sử riêng.</p><div class="rp-actions">'+rpButton('＋ Ván chơi mới','rpNewGame()')+rpButton('＋ Máy trong ván này','rpNewPhone()')+rpButton('Đổi tên ván','rpRenameGame()')+'</div>'+rpLibrary.games.map(g=>'<section><h3>'+rpE(g.name)+'</h3>'+rpLibrary.phones.filter(p=>p.gameId===g.id).map(p=>'<div class="rp-library-row"><span>'+rpE(p.owner||'Máy chưa nạp')+(p.id===rpLibrary.activeId?' · đang chọn':'')+'</span>'+'<div class="rp-phone-row-actions">'+rpButton(p.id===rpLibrary.activeId?'Đang mở':'Mở máy','rpSelectPhone('+JSON.stringify(p.id)+')',p.id===rpLibrary.activeId)+'<button type="button" class="rp-btn rp-btn-danger" onclick="'+rpE('rpDeletePhone('+JSON.stringify(p.id)+')')+'">Xóa máy</button></div></div>').join('')+'</section>').join('')+'<p class="rp-muted">Chơi cùng một nhân vật ở hai chat khác nhau? Tạo hai ván riêng. Trước khi sang cuộc chat khác, nhớ xuất thao tác về đúng chat.</p><div class="rp-actions">'+rpButton('Sao lưu toàn bộ kho','rpBackupLibrary()')+rpButton('Nhập bản sao lưu','rpRestoreFiles()')+rpButton('Đóng',"document.getElementById('rpPhonePicker').close()")+'</div>';
  document.body.appendChild(d);d.showModal();
 }
 function rpPhoneRequest(mode){
@@ -5637,7 +5637,7 @@ loadStateFromStorage=function(){
   rpLoadActive();
  }catch(e){rpStorageBlocked=true;alert('Không mở được kho máy. Bản lưu gốc được giữ nguyên; không tự ghi đè. '+e.message);}
 };
-window.addEventListener('beforeunload',e=>{if(!rpSaveCurrent()){e.preventDefault();e.returnValue='';}});
+window.addEventListener('beforeunload',e=>{if(rpMemoryOnly||rpStorageBlocked||!rpSaveCurrent()){e.preventDefault();e.returnValue='';}});
 
 // v19.6 — repair tab/search composition, read state, app identity and RP locks.
 var rpQueries={},rpSocialThread=null,rpPinContext=null;
@@ -5950,6 +5950,96 @@ function rpCopyAccessUpdate(key){var t=rpTool(currentDeviceData,key);if(!t)retur
  var text=rpPhoneRequest('DELTA')+'\nCập nhật quyền tiếp cận công cụ '+t.id+' ('+t.name+') theo kết quả vừa được xác lập trong truyện. Giữ đúng mã công cụ. Xuất lại dòng CONGCU với trạng thái open nếu đã mở thành công; nếu chưa thì locked. Chỉ xuất nội dung đã có căn cứ và được phép thấy; không tự cho mở thành công.';
  rpAccessCopy(text,'Đã sao chép lệnh cập nhật. Dán vào cùng khung chat rồi gửi; sao chép khối #DELTA trả về và nạp ở bước 4.');
 }
+
+// 19.8.3: backup must never depend on a successful browser-storage write.
+var rpMemoryOnly=false,rpStorageProblem='',rpStorageBaseRaw=null,rpRecoverySnapshot=null;
+function rpMemorySnapshot(){
+ if(!rpLibrary)throw Error('Chưa có kho trong phiên để sao lưu.');
+ var n=rpClone(rpLibrary),p=n.phones.find(x=>x.id===n.activeId);
+ if(p&&typeof currentDeviceData!=='undefined'&&rpValidData(currentDeviceData)){
+  p.data=rpClone(currentDeviceData);p.owner=p.data.charName||p.owner;
+  if(p.data._phoneSession)p.data._phoneSession.tries={apps:ddnnTries,device:ddnnDevTries};
+  p.snapshots=rpClone(deviceSnapshots||[]);p.snapshotIndex=currentSnapshotIndex;
+ }
+ rpValidateLibrary(n);return n;
+}
+rpBackupLibrary=function(){try{var n=rpMemorySnapshot();rpRecoverySnapshot=n;rpDownload('DDNN_Toan_bo_dien_thoai.json',n);return n;}catch(e){rpStorageMessage('Không tạo được bản sao lưu: '+e.message);return false;}};
+rpBackupPhone=function(){try{var n=rpMemorySnapshot(),p=n.phones.find(x=>x.id===n.activeId),g=n.games.find(x=>x.id===p.gameId);var x={schema:'DDNN_PHONE_BACKUP_19_5',game:g,data:p.data,snapshots:p.snapshots};rpDownload('DDNN_'+p.owner+'.json',x);return x;}catch(e){rpStorageMessage(e.message);return false;}};
+rpBackup=rpBackupPhone;
+function rpStorageMessage(message){var s=document.getElementById('rpStorageNotice');if(!s){s=document.createElement('section');s.id='rpStorageNotice';s.setAttribute('role','status');s.style.cssText='width:min(600px,100%);margin:12px auto;padding:16px;background:#342019;color:#fff0dc;border:2px solid #e9b16d;border-radius:14px;line-height:1.6;position:relative;z-index:40';var anchor=document.querySelector('.rp-library-bar');if(anchor)anchor.before(s);else document.body.prepend(s);}s.innerHTML='<strong>Trạng thái lưu dữ liệu</strong><p>'+rpE(message)+'</p><div class="rp-actions">'+rpButton('Sao lưu toàn bộ kho','rpBackupLibrary()')+rpButton('Xem cách tiếp tục','rpShowStorageRecovery()')+'</div>';}
+function rpStorageNotice(){if(rpMemoryOnly)rpStorageMessage('Đang chơi tạm trong phiên này. Thay đổi CHƯA được lưu vào trình duyệt. Hãy tải bản sao lưu trước khi đóng trang.');else if(rpStorageBlocked)rpStorageMessage(rpStorageProblem||'Chưa thể ghi kho. Các máy đang mở được giữ trong phiên; em vẫn có thể sao lưu và chọn cách tiếp tục.');else{var e=document.getElementById('rpStorageNotice');if(e)e.remove();}}
+function rpBlockStorage(reason){rpStorageBlocked=true;rpStorageProblem=reason;rpStorageNotice();return false;}
+rpCanWrite=function(){
+ if(rpMemoryOnly)return true;
+ try{
+  var raw=localStorage.getItem(RP_LIBRARY_KEY);
+  if(raw!==rpStorageBaseRaw)return rpBlockStorage('Kho đã thay đổi ở một trang hoặc cửa sổ khác. Đã dừng ghi để giữ cả hai phiên; bấm “Xem cách tiếp tục”.');
+  if(rpStorageBlocked)return false;
+  return true;
+ }catch(e){return rpBlockStorage('Trình duyệt hiện không cho đọc bộ nhớ. Em vẫn sao lưu được phiên đang mở; có thể chọn chơi tạm.');}
+};
+rpCommit=function(next){
+ if(!rpCanWrite())return false;
+ try{
+  rpValidateLibrary(next);
+  if(!rpMemoryOnly&&rpStorageBaseRaw===JSON.stringify(next)){rpStorageNotice();return true;}
+  next.revision=rpLibraryRev+1;var raw=JSON.stringify(next);
+  if(!rpMemoryOnly)localStorage.setItem(RP_LIBRARY_KEY,raw);
+  rpLibrary=next;rpLibraryRev=next.revision;if(!rpMemoryOnly)rpStorageBaseRaw=raw;
+  rpLibraryHeader();rpStorageNotice();return true;
+ }catch(e){return rpBlockStorage('Trình duyệt không ghi được dữ liệu (có thể bộ nhớ đầy hoặc bị chặn). Phiên đang mở vẫn còn; sao lưu hoặc chọn chơi tạm.');}
+};
+function rpNewTemporaryLibrary(){var gid=rpId(),pid=rpId();return {schema:'DDNN_PHONE_LIBRARY_19_5',revision:0,activeId:pid,games:[{id:gid,name:'Ván chơi đầu tiên'}],phones:[{id:pid,gameId:gid,owner:'Máy chưa nạp',data:ddnnBlankDevice(),snapshots:[],snapshotIndex:-1}]};}
+loadStateFromStorage=function(){
+ try{
+  var raw=localStorage.getItem(RP_LIBRARY_KEY);rpStorageBaseRaw=raw;
+  if(raw)rpLibrary=rpValidateLibrary(JSON.parse(raw));
+  else{
+   var old=localStorage.getItem('ddnn_phone_state_v18');
+   rpLibrary=old?rpMigrateLegacy(JSON.parse(old),JSON.parse(localStorage.getItem('ddnn_phone_snaps_v18')||'[]')):rpNewTemporaryLibrary();
+  }
+  rpLibraryRev=rpLibrary.revision;rpStorageBlocked=false;rpStorageProblem='';rpMemoryOnly=false;
+  if(!raw){var n=rpClone(rpLibrary);n.revision=1;var serialized=JSON.stringify(n);try{localStorage.setItem(RP_LIBRARY_KEY,serialized);rpLibrary=n;rpLibraryRev=1;rpStorageBaseRaw=serialized;}catch(e){rpBlockStorage('Trình duyệt chưa cho lưu kho. Bản dữ liệu đang mở còn trong phiên; em có thể sao lưu hoặc chọn chơi tạm.');}}
+  rpLoadActive();rpStorageNotice();
+ }catch(e){
+  if(!rpLibrary)rpLibrary=rpNewTemporaryLibrary();rpLibraryRev=rpLibrary.revision;rpMemoryOnly=false;
+  rpBlockStorage('Chưa đọc được kho đã lưu. App giữ nguyên dữ liệu gốc, không ghi đè. Em có thể sao lưu phiên đang mở hoặc chọn cách tiếp tục.');rpLoadActive();rpStorageNotice();
+ }
+};
+function rpShowStorageRecovery(){
+ var old=document.getElementById('rpStorageRecovery');if(old){if(!old.open)old.showModal();return;}
+ var d=document.createElement('dialog');d.id='rpStorageRecovery';d.className='rp-dialog';
+ d.innerHTML='<h2>Tiếp tục khi chưa lưu được</h2><p>'+rpE(rpMemoryOnly?'Phiên này đang chạy tạm, chưa được lưu vào trình duyệt.':rpStorageProblem||'Chọn cách tiếp tục, dữ liệu không bị tự xóa.')+'</p><ol style="padding-left:22px;line-height:1.7;margin:14px 0"><li>Bấm <b>Sao lưu toàn bộ kho</b> để tải các ván trong phiên này. Sao lưu không cần ghi bộ nhớ trình duyệt.</li><li>Nếu em mở web ở nhiều tab, chỉ giữ một tab để chơi. Đừng xóa dữ liệu trình duyệt.</li><li>Chọn cách tiếp tục bên dưới. Nếu bộ nhớ vẫn bị chặn, em có thể chơi tạm rồi tải bản sao lưu trước khi đóng trang.</li></ol><div class="rp-actions" style="flex-direction:column">'+rpButton('Sao lưu toàn bộ kho','rpBackupLibrary()')+rpButton('Thử lưu lại phiên này','rpRetryStorage()')+rpButton('Giữ phiên này thành bản riêng trong kho','rpRecoverSeparate()')+rpButton('Mở kho đã lưu trong trình duyệt','rpUseSavedLibrary()')+rpButton('Tiếp tục tạm thời · chưa lưu','rpContinueMemory()')+rpButton('Hiện bản sao lưu để chép tay','rpShowRescueText()')+rpButton('Đóng',"document.getElementById('rpStorageRecovery').close()")+'</div><p id="rpStorageRecoveryStatus" role="status" style="line-height:1.6"></p>';
+ document.body.appendChild(d);d.showModal();
+}
+function rpRecoveryStatus(s){rpStorageMessage(s);var e=document.getElementById('rpStorageRecoveryStatus');if(e)e.textContent=s;}
+function rpCloseRecovery(){var d=document.getElementById('rpStorageRecovery');if(d)d.close();}
+function rpContinueMemory(){rpMemoryOnly=true;rpStorageBlocked=false;rpCloseRecovery();rpStorageNotice();}
+function rpRetryStorage(){
+ var previous=rpMemoryOnly;rpMemoryOnly=false;rpStorageBlocked=false;
+ if(rpSaveCurrent()){rpStorageProblem='';rpCloseRecovery();rpStorageNotice();return true;}
+ if(previous)rpMemoryOnly=true;rpStorageNotice();rpRecoveryStatus('Chưa lưu được. Hãy sao lưu; nếu kho đã đổi, chọn giữ phiên này thành bản riêng để không đè dữ liệu.');return false;
+}
+function rpShowRescueText(){try{rpForm('Bản sao lưu · chọn toàn bộ và lưu thành file .json',[{key:'backup',label:'Dùng khi trình duyệt chặn tải file. Nội dung này gồm toàn bộ kho trong phiên đang mở.',value:JSON.stringify(rpMemorySnapshot(),null,2),long:true}],()=>{});}catch(e){rpRecoveryStatus(e.message);}}
+function rpUseSavedLibrary(){
+ try{
+  var raw=localStorage.getItem(RP_LIBRARY_KEY);if(!raw)throw Error('Chưa có kho đã lưu để mở.');var saved=rpValidateLibrary(JSON.parse(raw));
+  if(!confirm('App sẽ tải bản sao lưu phiên hiện tại trước, rồi mở kho đã lưu trong trình duyệt. Nếu có thay đổi chưa lưu, hãy giữ file sao lưu để nhập lại. Tiếp tục?'))return false;
+  if(!rpBackupLibrary())return false;
+  rpLibrary=saved;rpLibraryRev=saved.revision;rpStorageBaseRaw=raw;rpMemoryOnly=false;rpStorageBlocked=false;rpStorageProblem='';rpCloseRecovery();rpLoadActive();rpStorageNotice();return true;
+ }catch(e){rpRecoveryStatus('Chưa mở được kho đã lưu: '+e.message);return false;}
+}
+function rpRecoverSeparate(){
+ try{
+  var local=rpMemorySnapshot(),raw=localStorage.getItem(RP_LIBRARY_KEY),saved=raw?rpValidateLibrary(JSON.parse(raw)):rpNewTemporaryLibrary(),n=rpClone(saved),ids={};
+  for(var g of local.games){var id=rpId();ids[g.id]=id;n.games.push({id:id,name:g.name+' (phiên khôi phục)'});}
+  for(var p of local.phones){var cp=rpClone(p);cp.id=rpId();cp.gameId=ids[p.gameId];n.phones.push(cp);if(p.id===local.activeId)n.activeId=cp.id;}
+  rpValidateLibrary(n);if(localStorage.getItem(RP_LIBRARY_KEY)!==raw)throw Error('Kho vừa đổi ở tab khác. Hãy đóng tab đó rồi thử lại.');
+  n.revision=saved.revision+1;var output=JSON.stringify(n);localStorage.setItem(RP_LIBRARY_KEY,output);
+  rpRecoverySnapshot=local;rpLibrary=n;rpLibraryRev=n.revision;rpStorageBaseRaw=output;rpStorageBlocked=false;rpMemoryOnly=false;rpStorageProblem='';rpCloseRecovery();rpLoadActive();rpStorageNotice();return true;
+ }catch(e){rpRecoveryStatus('Chưa lưu được bản riêng: '+e.message+' Em vẫn có thể sao lưu hoặc chơi tạm.');return false;}
+}
+window.addEventListener('storage',function(e){if(e.key===RP_LIBRARY_KEY&&e.newValue!==rpStorageBaseRaw&&!rpMemoryOnly)rpBlockStorage('Kho đã thay đổi ở tab khác. Các thay đổi trong phiên này được giữ; chọn cách tiếp tục để tránh ghi đè.');});
 
     // INIT
     loadStateFromStorage();
